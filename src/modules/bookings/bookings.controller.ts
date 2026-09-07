@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 
 import { GetBookingsDto } from './dto/get-bookings.dto';
@@ -14,26 +26,26 @@ import { AddBookingTravellersDto } from './dto/add-booking-travellers.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ApiResponse } from 'src/common/types/index.type';
 import type { Response } from 'express';
- 
+
 @Controller('crm/bookings')
-@UseGuards(JwtAuthGuard,RolesGuard)
-  @Roles(users_role.operator, users_role.admin, users_role.manager)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(users_role.operator, users_role.admin, users_role.manager)
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
- @Get('follow-ups')
-getFollowUpBookings(@Req() req: any, @Query() query: GetBookingFollowUpsDto) {
-  return this.bookingsService.getBookingFollowUps(req.user, query);
-}
+  @Get('follow-ups')
+  getFollowUpBookings(@Req() req: any, @Query() query: GetBookingFollowUpsDto) {
+    return this.bookingsService.getBookingFollowUps(req.user, query);
+  }
   @Get()
   getBookings(@Req() req: any, @Query() query: GetBookingsDto) {
     return this.bookingsService.getBookings(req.user, query);
   }
- 
+
   @Get(':id')
   getBookingById(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.bookingsService.getBookingById(id, req.user);
   }
- 
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(users_role.admin, users_role.manager, users_role.operator)
@@ -42,8 +54,8 @@ getFollowUpBookings(@Req() req: any, @Query() query: GetBookingFollowUpsDto) {
     return {
       success: true,
       message: 'booking added successfully',
-      data: result
-    }
+      data: result,
+    };
   }
 
   @Patch(':id/status')
@@ -55,48 +67,41 @@ getFollowUpBookings(@Req() req: any, @Query() query: GetBookingFollowUpsDto) {
     return this.bookingsService.updateBookingStatus(id, dto, req.user);
   }
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(users_role.operator)
   //for employees to add internal notes that are not visible to customers
   @Patch(':id/notes')
-updateBookingNotes(
-  @Param('id', ParseIntPipe) id: number,
-  @Body() dto: UpdateBookingNotesDto,
-  @Req() req: any,
-) {
-  return this.bookingsService.updateBookingNotes(id, dto, req.user);
-}
- 
+  updateBookingNotes(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateBookingNotesDto,
+    @Req() req: any,
+  ) {
+    return this.bookingsService.updateBookingNotes(id, dto, req.user);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(users_role.admin)
-// For employees to update follow-up status, date, and notes
-@Patch(':id/follow-up')
-updateBookingFollowUp(
-  @Param('id', ParseIntPipe) id: number,
-  @Body() dto: UpdateBookingFollowUpDto,
-  @Req() req: any,
-) {
-  return this.bookingsService.updateBookingFollowUp(id, dto, req.user);
-}
+  // For employees to update follow-up status, date, and notes
+  @Patch(':id/follow-up')
+  updateBookingFollowUp(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateBookingFollowUpDto,
+    @Req() req: any,
+  ) {
+    return this.bookingsService.updateBookingFollowUp(id, dto, req.user);
+  }
 
+  @Get(':id/travellers')
+  getBookingTravellers(@Param('id', ParseIntPipe) bookingId: number, @Req() req: any) {
+    return this.bookingsService.getBookingTravellers(bookingId, req.user);
+  }
 
-@Get(':id/travellers')
-getBookingTravellers(
-  @Param('id', ParseIntPipe) bookingId: number,
-  @Req() req: any,
-) {
-  return this.bookingsService.getBookingTravellers(bookingId, req.user);
-}
- 
-@Post(':id/travellers')
-addBookingTravellers(
-  @Param('id', ParseIntPipe) bookingId: number,
-  @Body() dto: AddBookingTravellersDto,
-  @Req() req: any,
-) {
-  return this.bookingsService.addBookingTravellers(bookingId, dto, req.user);
-}
-
-
-
+  @Post(':id/travellers')
+  addBookingTravellers(
+    @Param('id', ParseIntPipe) bookingId: number,
+    @Body() dto: AddBookingTravellersDto,
+    @Req() req: any,
+  ) {
+    return this.bookingsService.addBookingTravellers(bookingId, dto, req.user);
+  }
 }

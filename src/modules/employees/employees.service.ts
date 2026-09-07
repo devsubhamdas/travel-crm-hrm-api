@@ -9,7 +9,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
-
 @Injectable()
 export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -208,10 +207,7 @@ export class EmployeesService {
 
     const existing = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { email: dto.email },
-          ...(dto.contact_no ? [{ contact_no: dto.contact_no }] : []),
-        ],
+        OR: [{ email: dto.email }, ...(dto.contact_no ? [{ contact_no: dto.contact_no }] : [])],
       },
     });
 

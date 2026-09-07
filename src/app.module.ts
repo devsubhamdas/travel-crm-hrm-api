@@ -18,9 +18,19 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { LeadCleanupService } from './modules/leads/leadCleanUp.service';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 
-
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule, LeadsModule, EmployeesModule, BookingsModule, DocumentsModule, ToursModule,ScheduleModule.forRoot(), DashboardModule],
+  imports: [
+    AuthModule,
+    UserModule,
+    PrismaModule,
+    LeadsModule,
+    EmployeesModule,
+    BookingsModule,
+    DocumentsModule,
+    ToursModule,
+    ScheduleModule.forRoot(),
+    DashboardModule,
+  ],
   controllers: [AppController, LeadsController, EmployeesController],
   providers: [AppService, LeadsService, EmployeesService, LeadCleanupService],
 })

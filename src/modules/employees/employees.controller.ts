@@ -16,7 +16,6 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
-
 @Controller('crm/employees')
 @UseGuards(JwtAuthGuard)
 export class EmployeesController {
@@ -39,8 +38,8 @@ export class EmployeesController {
       search,
       role,
       status,
-      sort, 
-      order
+      sort,
+      order,
     });
   }
 

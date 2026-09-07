@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { GetLeadsDto } from './dto/get-leads.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AssignLeadDto } from './dto/assign-lead.dto';
@@ -16,13 +22,12 @@ export class LeadsService {
   // create(createLeadDto: CreateLeadDto) {
   //   return 'This action adds a new lead';
   // }
- constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getLeads(query: GetLeadsDto, user: any) {
-
-      if (!user) {
-    throw new UnauthorizedException('User not authenticated');
-  }
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
     const page = Number(query.page) || 1;
     const pageSize = Number(query.pageSize) || 20;
     const skip = (page - 1) * pageSize;
@@ -43,7 +48,6 @@ export class LeadsService {
     if (query.source) where.source_type = query.source;
     if (query.departure_type) where.departure_type = query.departure_type;
     if (query.assignedAgentId) where.assigned_agent_id = BigInt(query.assignedAgentId);
-
 
     const currentRole = String(user?.role || '').toLowerCase();
 
@@ -100,26 +104,26 @@ export class LeadsService {
     };
   }
 
-async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
- if (!user) {
-    throw new UnauthorizedException('User not authenticated');
-  }
+  async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
 
-   const currentRole = String(user.role || '').toLowerCase();
+    const currentRole = String(user.role || '').toLowerCase();
 
-  if (currentRole !== 'admin') {
-    throw new ForbiddenException('Only admin can assign leads');
-  }
+    if (currentRole !== 'admin') {
+      throw new ForbiddenException('Only admin can assign leads');
+    }
 
-  const lead = await this.prisma.leads.findUnique({
-    where: { id: BigInt(leadId) },
-  });
+    const lead = await this.prisma.leads.findUnique({
+      where: { id: BigInt(leadId) },
+    });
 
-  if (!lead) {
-    throw new NotFoundException('Lead not found');
-  }
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
+    }
 
-  const employee = await this.prisma.user.findUnique({
+    const employee = await this.prisma.user.findUnique({
       where: { id: BigInt(dto.assignedAgentId) },
       select: { id: true, name: true, role: true, is_active: true },
     });
@@ -138,65 +142,70 @@ async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
       throw new BadRequestException('Lead can only be assigned to sales/admin');
     }
 
-  let assignedAgentName = dto.assignedAgentName?.trim() || employee.name?.trim() || `User ${employee.id.toString()}` || '';
+    let assignedAgentName =
+      dto.assignedAgentName?.trim() ||
+      employee.name?.trim() ||
+      `User ${employee.id.toString()}` ||
+      '';
 
-  const updated = await this.prisma.$transaction(async (tx) => {
-    const updatedLead = await tx.leads.update({
-      where: { id: BigInt(leadId) },
-      data: {
-        assigned_agent_id: BigInt(dto.assignedAgentId),
-        assigned_agent_name: assignedAgentName,
-        follow_up_date: dto.followupDate ? new Date(dto.followupDate) : null,
-        updated_at: new Date(),
-      },
-    });
-
-    // if no lead-followups then create new or else update
-    const is_lead_follow_up_exists = await tx.lead_follow_ups.findFirst({
-      where: {
-        lead_id: leadId
-      }
-    })
-    if(!is_lead_follow_up_exists) await tx.lead_follow_ups.create({
-      data: {
-        lead_id: leadId,
-        follow_up_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days later
-        status: 'pending',
-        created_by: BigInt(user.id)
-      }
-    })
-
-    await tx.lead_activities.create({
-      data: {
-        lead_id: BigInt(leadId),
-        activity_type: 'assigned',
-        old_value: lead.assigned_agent_id
-          ? JSON.stringify({
-              assigned_agent_id: Number(lead.assigned_agent_id),
-              assigned_agent_name: lead.assigned_agent_name,
-            })
-          : null,
-        new_value: JSON.stringify({
-          assigned_agent_id: dto.assignedAgentId,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedLead = await tx.leads.update({
+        where: { id: BigInt(leadId) },
+        data: {
+          assigned_agent_id: BigInt(dto.assignedAgentId),
           assigned_agent_name: assignedAgentName,
-        }),
-        note: dto.note || `Lead assigned to ${assignedAgentName}`,
-        created_by: BigInt(user.id),
-      },
+          follow_up_date: dto.followupDate ? new Date(dto.followupDate) : null,
+          updated_at: new Date(),
+        },
+      });
+
+      // if no lead-followups then create new or else update
+      const is_lead_follow_up_exists = await tx.lead_follow_ups.findFirst({
+        where: {
+          lead_id: leadId,
+        },
+      });
+      if (!is_lead_follow_up_exists)
+        await tx.lead_follow_ups.create({
+          data: {
+            lead_id: leadId,
+            follow_up_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days later
+            status: 'pending',
+            created_by: BigInt(user.id),
+          },
+        });
+
+      await tx.lead_activities.create({
+        data: {
+          lead_id: BigInt(leadId),
+          activity_type: 'assigned',
+          old_value: lead.assigned_agent_id
+            ? JSON.stringify({
+                assigned_agent_id: Number(lead.assigned_agent_id),
+                assigned_agent_name: lead.assigned_agent_name,
+              })
+            : null,
+          new_value: JSON.stringify({
+            assigned_agent_id: dto.assignedAgentId,
+            assigned_agent_name: assignedAgentName,
+          }),
+          note: dto.note || `Lead assigned to ${assignedAgentName}`,
+          created_by: BigInt(user.id),
+        },
+      });
+
+      return updatedLead;
     });
 
-    return updatedLead;
-  });
-
-  return {
-    message: 'Lead assigned successfully',
-    data: {
-      ...updated,
-      id: Number(updated.id),
-      assigned_agent_id: updated.assigned_agent_id ? Number(updated.assigned_agent_id) : null,
-    },
-  };
-}
+    return {
+      message: 'Lead assigned successfully',
+      data: {
+        ...updated,
+        id: Number(updated.id),
+        assigned_agent_id: updated.assigned_agent_id ? Number(updated.assigned_agent_id) : null,
+      },
+    };
+  }
 
   async updateLeadStatus(leadId: number, dto: UpdateLeadStatusDto, user: any) {
     if (!user) {
@@ -242,9 +251,7 @@ async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
 
     // sales must provide note when marking lost or closed
     if (['lost', 'closed'].includes(nextStatus) && !dto.note?.trim()) {
-      throw new BadRequestException(
-        'A note is required when marking a lead as lost or closed',
-      );
+      throw new BadRequestException('A note is required when marking a lead as lost or closed');
     }
 
     const nextFollowUpStatus = this.resolveLeadFollowUpStatusForStatusChange(
@@ -283,9 +290,7 @@ async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
           lead_id: leadIdBigInt,
           follow_up_date: nextFollowUpDate,
           status: this.resolveFollowUpRowStatus(nextFollowUpStatus, false),
-          note:
-            dto.note?.trim() ||
-            `Lead status changed from ${currentStatus} to ${nextStatus}`,
+          note: dto.note?.trim() || `Lead status changed from ${currentStatus} to ${nextStatus}`,
           created_by: BigInt(user.id),
         },
       });
@@ -304,9 +309,7 @@ async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
             follow_up_status: nextFollowUpStatus,
             follow_up_date: nextFollowUpDate,
           }),
-          note:
-            dto.note?.trim() ||
-            `Lead status changed from ${currentStatus} to ${nextStatus}`,
+          note: dto.note?.trim() || `Lead status changed from ${currentStatus} to ${nextStatus}`,
           created_by: BigInt(user.id),
         },
       });
@@ -353,9 +356,7 @@ async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
 
     // admin note required only when reopening lost/closed
     if (isReopeningDeadLead && !dto.note?.trim()) {
-      throw new BadRequestException(
-        'A note is required when reopening a lost or closed lead',
-      );
+      throw new BadRequestException('A note is required when reopening a lost or closed lead');
     }
 
     if (currentStatus === nextStatus) {
@@ -402,8 +403,7 @@ async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
           follow_up_date: nextFollowUpDate,
           status: this.resolveFollowUpRowStatus(nextFollowUpStatus, isReopeningDeadLead),
           note:
-            dto.note?.trim() ||
-            `Admin changed lead status from ${currentStatus} to ${nextStatus}`,
+            dto.note?.trim() || `Admin changed lead status from ${currentStatus} to ${nextStatus}`,
           created_by: BigInt(user.id),
         },
       });
@@ -423,8 +423,7 @@ async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
             follow_up_date: nextFollowUpDate,
           }),
           note:
-            dto.note?.trim() ||
-            `Admin changed lead status from ${currentStatus} to ${nextStatus}`,
+            dto.note?.trim() || `Admin changed lead status from ${currentStatus} to ${nextStatus}`,
           created_by: BigInt(user.id),
         },
       });
@@ -439,557 +438,352 @@ async assignLead(leadId: number, dto: AssignLeadDto, user: any) {
   }
 
   async addFollowupNote(followupId: number, note: string) {
-    if(!followupId || !note) throw new BadRequestException('follow-up id or note is missing');
-    
+    if (!followupId || !note) throw new BadRequestException('follow-up id or note is missing');
+
     const result = await this.prisma.$transaction(async (tx) => {
       const result = await tx.lead_follow_ups.update({
-        where: {id: BigInt(followupId)},
+        where: { id: BigInt(followupId) },
         data: {
           note,
-          status: 'done'
-        }
+          status: 'done',
+        },
       });
       await tx.leads.update({
         where: {
-          id: BigInt(result.lead_id)
+          id: BigInt(result.lead_id),
         },
         data: {
-          follow_up_status: 'completed'
-        }
-      })
+          follow_up_status: 'completed',
+        },
+      });
       return result;
-    })
+    });
 
-    if(!result) {
-      throw new NotFoundException('follow-up not found')
+    if (!result) {
+      throw new NotFoundException('follow-up not found');
     }
 
     return result;
   }
 
-async updateFollowUp(leadId: number, dto: UpdateFollowUpDto, user: any) {
-  if (!user) {
-    throw new UnauthorizedException('User not authenticated');
-  }
-
-  const leadIdBigInt = BigInt(leadId);
-
-  const lead = await this.prisma.leads.findUnique({
-    where: { id: leadIdBigInt },
-  });
-
-  if (!lead) {
-    throw new NotFoundException('Lead not found');
-  }
-
-  const currentRole = String(user.role || '').toLowerCase();
-
-  // 1. Permission Check
-  if (currentRole === 'sales') {
-    if (!lead.assigned_agent_id || Number(lead.assigned_agent_id) !== Number(user.id)) {
-      throw new ForbiddenException('You can update follow-up only for your assigned leads');
+  async updateFollowUp(leadId: number, dto: UpdateFollowUpDto, user: any) {
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
     }
-  }
 
-  // 2. Logic Check: Check for unresolved (Missed/Pending) tasks in the past
-  const unresolvedTask = await this.prisma.lead_follow_ups.findFirst({
-    where: {
-      lead_id: leadIdBigInt,
-      status: { in: ['pending', 'missed'] },
-      follow_up_date: { lt: new Date() }, // It was supposed to happen before "now"
-    },
-  });
+    const leadIdBigInt = BigInt(leadId);
 
-  // If they have a missed task but didn't provide a note explaining the result
-  if (unresolvedTask && !dto.note) {
-    throw new BadRequestException(
-      'A note is required to resolve the previous missed follow-up before scheduling a new one.'
-    );
-  }
+    const lead = await this.prisma.leads.findUnique({
+      where: { id: leadIdBigInt },
+    });
 
-  const followUpDateValue = dto.followUpDate ? new Date(dto.followUpDate) : null;
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
+    }
 
-  const updated = await this.prisma.$transaction(async (tx) => {
-    
-    // 3. Resolve existing tasks (The "Cleanup" step)
-    // If there is an old task, mark it as 'done' so it doesn't stay 'pending' forever
-    if (unresolvedTask) {
-      await tx.lead_follow_ups.update({
-        where: { id: unresolvedTask.id },
+    const currentRole = String(user.role || '').toLowerCase();
+
+    // 1. Permission Check
+    if (currentRole === 'sales') {
+      if (!lead.assigned_agent_id || Number(lead.assigned_agent_id) !== Number(user.id)) {
+        throw new ForbiddenException('You can update follow-up only for your assigned leads');
+      }
+    }
+
+    // 2. Logic Check: Check for unresolved (Missed/Pending) tasks in the past
+    const unresolvedTask = await this.prisma.lead_follow_ups.findFirst({
+      where: {
+        lead_id: leadIdBigInt,
+        status: { in: ['pending', 'missed'] },
+        follow_up_date: { lt: new Date() }, // It was supposed to happen before "now"
+      },
+    });
+
+    // If they have a missed task but didn't provide a note explaining the result
+    if (unresolvedTask && !dto.note) {
+      throw new BadRequestException(
+        'A note is required to resolve the previous missed follow-up before scheduling a new one.',
+      );
+    }
+
+    const followUpDateValue = dto.followUpDate ? new Date(dto.followUpDate) : null;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // 3. Resolve existing tasks (The "Cleanup" step)
+      // If there is an old task, mark it as 'done' so it doesn't stay 'pending' forever
+      if (unresolvedTask) {
+        await tx.lead_follow_ups.update({
+          where: { id: unresolvedTask.id },
+          data: {
+            status: 'done',
+            note: `[Previous Task Resolved]: ${dto.note}`,
+            updated_at: new Date(),
+          },
+        });
+      }
+
+      // 4. Update the Lead Table (The Current State)
+      const updatedLead = await tx.leads.update({
+        where: { id: leadIdBigInt },
         data: {
-          status: 'done',
-          note: `[Previous Task Resolved]: ${dto.note}`,
+          follow_up_status: dto.followUpStatus as any,
+          follow_up_date: followUpDateValue,
           updated_at: new Date(),
         },
       });
-    }
 
-    // 4. Update the Lead Table (The Current State)
-    const updatedLead = await tx.leads.update({
-      where: { id: leadIdBigInt },
-      data: {
-        follow_up_status: dto.followUpStatus as any,
-        follow_up_date: followUpDateValue,
-        updated_at: new Date(),
-      },
-    });
-
-    // 5. Create the NEW Task (The Future State)
-    await tx.lead_follow_ups.create({
-      data: {
-        lead_id: leadIdBigInt,
-        follow_up_date: followUpDateValue,
-        status:
-          dto.followUpStatus === 'completed' || dto.followUpStatus === 'not_required'
-            ? 'done'
-            : dto.followUpStatus === 'follow_up_needed' 
-            ? 'missed' 
-            : 'pending',
-        note: dto.note || null,
-        created_by: BigInt(user.id),
-      },
-    });
-
-    // 6. Log the Activity
-    await tx.lead_activities.create({
-      data: {
-        lead_id: leadIdBigInt,
-        activity_type: 'follow_up',
-        old_value: JSON.stringify({
-          follow_up_status: lead.follow_up_status,
-          follow_up_date: lead.follow_up_date,
-        }),
-        new_value: JSON.stringify({
-          follow_up_status: dto.followUpStatus,
+      // 5. Create the NEW Task (The Future State)
+      await tx.lead_follow_ups.create({
+        data: {
+          lead_id: leadIdBigInt,
           follow_up_date: followUpDateValue,
-        }),
-        note: dto.note || `Follow-up updated to ${dto.followUpStatus}`,
-        created_by: BigInt(user.id),
+          status:
+            dto.followUpStatus === 'completed' || dto.followUpStatus === 'not_required'
+              ? 'done'
+              : dto.followUpStatus === 'follow_up_needed'
+                ? 'missed'
+                : 'pending',
+          note: dto.note || null,
+          created_by: BigInt(user.id),
+        },
+      });
+
+      // 6. Log the Activity
+      await tx.lead_activities.create({
+        data: {
+          lead_id: leadIdBigInt,
+          activity_type: 'follow_up',
+          old_value: JSON.stringify({
+            follow_up_status: lead.follow_up_status,
+            follow_up_date: lead.follow_up_date,
+          }),
+          new_value: JSON.stringify({
+            follow_up_status: dto.followUpStatus,
+            follow_up_date: followUpDateValue,
+          }),
+          note: dto.note || `Follow-up updated to ${dto.followUpStatus}`,
+          created_by: BigInt(user.id),
+        },
+      });
+
+      return updatedLead;
+    });
+
+    return {
+      message: 'Follow-up processed and rescheduled successfully',
+      data: {
+        ...updated,
+        id: Number(updated.id),
+        assigned_agent_id: updated.assigned_agent_id ? Number(updated.assigned_agent_id) : null,
+      },
+    };
+  }
+  async getLeadActivities(leadId: number, user: any) {
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const lead = await this.prisma.leads.findUnique({
+      where: { id: BigInt(leadId) },
+      select: {
+        id: true,
+        lead_code: true,
+        name: true,
+        status: true,
+        assigned_agent_id: true,
+        assigned_agent_name: true,
+        follow_up_status: true,
+        follow_up_date: true,
       },
     });
 
-    return updatedLead;
-  });
-
-  return {
-    message: 'Follow-up processed and rescheduled successfully',
-    data: {
-      ...updated,
-      id: Number(updated.id),
-      assigned_agent_id: updated.assigned_agent_id ? Number(updated.assigned_agent_id) : null,
-    },
-  };
-}
-async getLeadActivities(leadId: number, user: any) {
-  if (!user) {
-    throw new UnauthorizedException('User not authenticated');
-  }
-
-  const lead = await this.prisma.leads.findUnique({
-    where: { id: BigInt(leadId) },
-    select: {
-      id: true,
-      lead_code: true,
-      name: true,
-      status: true,
-      assigned_agent_id: true,
-      assigned_agent_name: true,
-      follow_up_status: true,
-      follow_up_date: true,
-    },
-  });
-
-  if (!lead) {
-    throw new NotFoundException('Lead not found');
-  }
-
-  const currentRole = String(user.role || '').toLowerCase();
-
-  // sales can only view activities of their assigned leads
-  if (currentRole === 'sales') {
-    if (!lead.assigned_agent_id || Number(lead.assigned_agent_id) !== Number(user.id)) {
-      throw new ForbiddenException('You can view activities only for your assigned leads');
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
     }
+
+    const currentRole = String(user.role || '').toLowerCase();
+
+    // sales can only view activities of their assigned leads
+    if (currentRole === 'sales') {
+      if (!lead.assigned_agent_id || Number(lead.assigned_agent_id) !== Number(user.id)) {
+        throw new ForbiddenException('You can view activities only for your assigned leads');
+      }
+    }
+
+    const [activities, followUps] = await Promise.all([
+      this.prisma.lead_activities.findMany({
+        where: { lead_id: BigInt(leadId) },
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          lead_id: true,
+          activity_type: true,
+          old_value: true,
+          new_value: true,
+          note: true,
+          created_by: true,
+          created_at: true,
+        },
+      }),
+      this.prisma.lead_follow_ups.findMany({
+        where: { lead_id: BigInt(leadId) },
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          lead_id: true,
+          follow_up_date: true,
+          status: true,
+          note: true,
+          created_by: true,
+          created_at: true,
+          updated_at: true,
+        },
+      }),
+    ]);
+
+    // merge into one timeline for drawer UI
+    const timeline = [
+      ...activities.map((item) => ({
+        id: `activity-${item.id.toString()}`,
+        type: 'activity',
+        activityType: item.activity_type,
+        title: this.getActivityTitle(item.activity_type),
+        note: item.note,
+        oldValue: this.safeParseJson(item.old_value),
+        newValue: this.safeParseJson(item.new_value),
+        createdBy: item.created_by ? Number(item.created_by) : null,
+        createdAt: item.created_at,
+        sortDate: item.created_at,
+      })),
+      ...followUps.map((item) => ({
+        id: `followup-${item.id.toString()}`,
+        type: 'follow_up',
+        activityType: 'follow_up',
+        title: 'Follow-up update',
+        note: item.note,
+        followUpStatus: item.status,
+        followUpDate: item.follow_up_date,
+        createdBy: item.created_by ? Number(item.created_by) : null,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        sortDate: item.created_at,
+      })),
+    ].sort((a, b) => {
+      const aTime = a.sortDate ? new Date(a.sortDate).getTime() : 0;
+      const bTime = b.sortDate ? new Date(b.sortDate).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    return {
+      lead: {
+        id: Number(lead.id),
+        lead_code: lead.lead_code,
+        name: lead.name,
+        status: lead.status,
+        assigned_agent_id: lead.assigned_agent_id ? Number(lead.assigned_agent_id) : null,
+        assigned_agent_name: lead.assigned_agent_name,
+        follow_up_status: lead.follow_up_status,
+        follow_up_date: lead.follow_up_date,
+      },
+      activities: activities.map((item) => ({
+        ...item,
+        id: Number(item.id),
+        lead_id: Number(item.lead_id),
+        created_by: item.created_by ? Number(item.created_by) : null,
+        old_value: this.safeParseJson(item.old_value),
+        new_value: this.safeParseJson(item.new_value),
+      })),
+      followUps: followUps.map((item) => ({
+        ...item,
+        id: Number(item.id),
+        lead_id: Number(item.lead_id),
+        created_by: item.created_by ? Number(item.created_by) : null,
+      })),
+      timeline,
+    };
   }
 
-  const [activities, followUps] = await Promise.all([
-    this.prisma.lead_activities.findMany({
-      where: { lead_id: BigInt(leadId) },
-      orderBy: { created_at: 'desc' },
+  async getLeadById(leadId: number, user: any) {
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const lead = await this.prisma.leads.findUnique({
+      where: { id: BigInt(leadId) },
       select: {
         id: true,
-        lead_id: true,
-        activity_type: true,
-        old_value: true,
-        new_value: true,
-        note: true,
-        created_by: true,
-        created_at: true,
-      },
-    }),
-    this.prisma.lead_follow_ups.findMany({
-      where: { lead_id: BigInt(leadId) },
-      orderBy: { created_at: 'desc' },
-      select: {
-        id: true,
-        lead_id: true,
-        follow_up_date: true,
+        lead_code: true,
+        source_type: true,
+        source_table: true,
+        source_row_id: true,
+
+        name: true,
+        email: true,
+        contact_no: true,
+
+        destination: true,
+        travel_date: true,
+        travellers_count: true,
+        budget: true,
+        source: true,
+        departure_type: true,
+        remark: true,
+
         status: true,
-        note: true,
-        created_by: true,
+        assigned_agent_id: true,
+        assigned_agent_name: true,
+
+        follow_up_status: true,
+        follow_up_date: true,
+
+        tour_id: true,
+        raw_payload: true,
+
         created_at: true,
         updated_at: true,
       },
-    }),
-  ]);
-
-  // merge into one timeline for drawer UI
-  const timeline = [
-    ...activities.map((item) => ({
-      id: `activity-${item.id.toString()}`,
-      type: 'activity',
-      activityType: item.activity_type,
-      title: this.getActivityTitle(item.activity_type),
-      note: item.note,
-      oldValue: this.safeParseJson(item.old_value),
-      newValue: this.safeParseJson(item.new_value),
-      createdBy: item.created_by ? Number(item.created_by) : null,
-      createdAt: item.created_at,
-      sortDate: item.created_at,
-    })),
-    ...followUps.map((item) => ({
-      id: `followup-${item.id.toString()}`,
-      type: 'follow_up',
-      activityType: 'follow_up',
-      title: 'Follow-up update',
-      note: item.note,
-      followUpStatus: item.status,
-      followUpDate: item.follow_up_date,
-      createdBy: item.created_by ? Number(item.created_by) : null,
-      createdAt: item.created_at,
-      updatedAt: item.updated_at,
-      sortDate: item.created_at,
-    })),
-  ].sort((a, b) => {
-    const aTime = a.sortDate ? new Date(a.sortDate).getTime() : 0;
-    const bTime = b.sortDate ? new Date(b.sortDate).getTime() : 0;
-    return bTime - aTime;
-  });
-
-  return {
-    lead: {
-      id: Number(lead.id),
-      lead_code: lead.lead_code,
-      name: lead.name,
-      status: lead.status,
-      assigned_agent_id: lead.assigned_agent_id ? Number(lead.assigned_agent_id) : null,
-      assigned_agent_name: lead.assigned_agent_name,
-      follow_up_status: lead.follow_up_status,
-      follow_up_date: lead.follow_up_date,
-    },
-    activities: activities.map((item) => ({
-      ...item,
-      id: Number(item.id),
-      lead_id: Number(item.lead_id),
-      created_by: item.created_by ? Number(item.created_by) : null,
-      old_value: this.safeParseJson(item.old_value),
-      new_value: this.safeParseJson(item.new_value),
-    })),
-    followUps: followUps.map((item) => ({
-      ...item,
-      id: Number(item.id),
-      lead_id: Number(item.lead_id),
-      created_by: item.created_by ? Number(item.created_by) : null,
-    })),
-    timeline,
-  };
-}
-
-async getLeadById(leadId: number, user: any) {
-  if (!user) {
-    throw new UnauthorizedException('User not authenticated');
-  }
-
-  const lead = await this.prisma.leads.findUnique({
-    where: { id: BigInt(leadId) },
-    select: {
-      id: true,
-      lead_code: true,
-      source_type: true,
-      source_table: true,
-      source_row_id: true,
-
-      name: true,
-      email: true,
-      contact_no: true,
-
-      destination: true,
-      travel_date: true,
-      travellers_count: true,
-      budget: true,
-      source: true,
-      departure_type: true,
-      remark: true,
-
-      status: true,
-      assigned_agent_id: true,
-      assigned_agent_name: true,
-
-      follow_up_status: true,
-      follow_up_date: true,
-
-      tour_id: true,
-      raw_payload: true,
-
-      created_at: true,
-      updated_at: true,
-    },
-  });
-
-  if (!lead) {
-    throw new NotFoundException('Lead not found');
-  }
-
-  const currentRole = String(user.role || '').toLowerCase();
-
-  // sales can only view their assigned leads
-  if (currentRole === 'sales') {
-    if (!lead.assigned_agent_id || Number(lead.assigned_agent_id) !== Number(user.id)) {
-      throw new ForbiddenException('You can view only your assigned leads');
-    }
-  }
-
-  return {
-    data: {
-      ...lead,
-      id: Number(lead.id),
-      source_row_id: Number(lead.source_row_id),
-      assigned_agent_id: lead.assigned_agent_id ? Number(lead.assigned_agent_id) : null,
-      tour_id: lead.tour_id ? Number(lead.tour_id) : null,
-    },
-  };
-}
-
-async createLead(dto: CreateLeadDto, user: any) {
-  if (!user) {
-    throw new UnauthorizedException('User not authenticated');
-  }
-
-  const currentRole = String(user.role || '').toLowerCase();
-
-  // only staff can manually create leads
-  if (!['admin', 'sales', 'operator'].includes(currentRole)) {
-    throw new ForbiddenException('You are not allowed to create leads');
-  }
-
-  let assignedAgentId: bigint | null = null;
-  let assignedAgentName: string | null = null;
-
-  if (dto.assigned_agent_id) {
-    const employee = await this.prisma.user.findUnique({
-      where: { id: BigInt(dto.assigned_agent_id) },
-      select: { id: true, name: true, role: true, is_active: true },
     });
 
-    if (!employee) {
-      throw new BadRequestException('Assigned employee not found');
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
     }
 
-    if (!employee.is_active) {
-      throw new BadRequestException('Assigned employee is inactive');
+    const currentRole = String(user.role || '').toLowerCase();
+
+    // sales can only view their assigned leads
+    if (currentRole === 'sales') {
+      if (!lead.assigned_agent_id || Number(lead.assigned_agent_id) !== Number(user.id)) {
+        throw new ForbiddenException('You can view only your assigned leads');
+      }
     }
 
-    const employeeRole = String(employee.role || '').toLowerCase();
-    if (!['admin', 'sales', 'operator'].includes(employeeRole)) {
-      throw new BadRequestException('Lead can be assigned only to staff');
-    }
-
-    assignedAgentId = BigInt(dto.assigned_agent_id);
-    assignedAgentName = dto.assigned_agent_name?.trim() || employee.name?.trim() || `User ${employee.id.toString()}`;
-  }
-
-  const created = await this.prisma.$transaction(async (tx) => {
-    const lead = await tx.leads.create({
+    return {
       data: {
-        lead_code: 'TEMP',
-        source_type: (dto.source_type || 'manual') as any,
-        source_table: (dto.source|| 'manual') as any,
-        source_row_id: BigInt(0),
-        departure_type: dto.departure_type || 'others',
-
-        name: dto.name.trim(),
-        email: dto.email?.trim() || null,
-        contact_no: dto.contact_no?.trim() || null,
-
-        destination: dto.destination?.trim() || null,
-        travel_date: dto.travel_date ? new Date(dto.travel_date) : null,
-        travellers_count: dto.travellers_count ?? null,
-        budget: dto.budget?.trim() || null,
-        source: dto.source?.trim() || 'Manual',
-        remark: dto.remark?.trim() || null,
-
-        status: (dto.status || 'new') as any,
-        assigned_agent_id: assignedAgentId,
-        assigned_agent_name: assignedAgentName,
-        follow_up_status: (dto.follow_up_status || 'pending') as any,
-        follow_up_date: dto.follow_up_date ? new Date(dto.follow_up_date) : null,
-
-        raw_payload: JSON.stringify({
-          created_manually: true,
-          created_by_user_id: user.id,
-          created_by_role: user.role,
-        }),
+        ...lead,
+        id: Number(lead.id),
+        source_row_id: Number(lead.source_row_id),
+        assigned_agent_id: lead.assigned_agent_id ? Number(lead.assigned_agent_id) : null,
+        tour_id: lead.tour_id ? Number(lead.tour_id) : null,
       },
-    });
+    };
+  }
 
-    const leadCode = this.generateLeadCode(lead.id);
-
-    const updatedLead = await tx.leads.update({
-      where: { id: lead.id },
-      data: { lead_code: leadCode },
-    });
-
-    await tx.lead_activities.create({
-      data: {
-        lead_id: lead.id,
-        activity_type: 'created',
-        note: `Lead created manually by ${currentRole}`,
-        created_by: BigInt(user.id),
-      },
-    });
-
-    if (assignedAgentId) {
-      await tx.lead_activities.create({
-        data: {
-          lead_id: lead.id,
-          activity_type: 'assigned',
-          new_value: JSON.stringify({
-            assigned_agent_id: Number(assignedAgentId),
-            assigned_agent_name: assignedAgentName,
-          }),
-          note: `Lead assigned during creation to ${assignedAgentName}`,
-          created_by: BigInt(user.id),
-        },
-      });
+  async createLead(dto: CreateLeadDto, user: any) {
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
     }
 
-    if (dto.follow_up_date || dto.follow_up_status) {
-      await tx.lead_follow_ups.create({
-        data: {
-          lead_id: lead.id,
-          follow_up_date: dto.follow_up_date ? new Date(dto.follow_up_date) : null,
-          status:
-            dto.follow_up_status === 'completed'
-              ? 'done'
-              : dto.follow_up_status === 'scheduled'
-              ? 'pending'
-              : dto.follow_up_status === 'follow_up_needed'
-              ? 'rescheduled'
-              : dto.follow_up_status === 'not_required'
-              ? 'done'
-              : 'pending',
-          note: dto.remark?.trim() || 'Initial follow-up created with manual lead',
-          created_by: BigInt(user.id),
-        },
-      });
+    const currentRole = String(user.role || '').toLowerCase();
+
+    // only staff can manually create leads
+    if (!['admin', 'sales', 'operator'].includes(currentRole)) {
+      throw new ForbiddenException('You are not allowed to create leads');
     }
 
-    return updatedLead;
-  });
+    let assignedAgentId: bigint | null = null;
+    let assignedAgentName: string | null = null;
 
-  return {
-    message: 'Lead created successfully',
-    data: {
-      ...created,
-      id: Number(created.id),
-      source_row_id: Number(created.source_row_id),
-      assigned_agent_id: created.assigned_agent_id ? Number(created.assigned_agent_id) : null,
-      tour_id: created.tour_id ? Number(created.tour_id) : null,
-    },
-  };
-}
-
-private generateLeadCode(id: bigint | number): string {
-  const numericId = Number(id);
-
-  const year = new Date().getFullYear();
-
-  const paddedId = numericId.toString().padStart(6, '0');
-
-  return `LED-${year}-${paddedId}`;
-}
-
-private safeParseJson(value: string | null) {
-  if (!value) return null;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-}
-
-private getActivityTitle(activityType: string) {
-  switch (activityType) {
-    case 'assigned':
-      return 'Lead assigned';
-    case 'status_changed':
-      return 'Status changed';
-    case 'follow_up':
-      return 'Follow-up updated';
-    case 'remark_added':
-      return 'Remark added';
-    case 'converted':
-      return 'Lead converted';
-    case 'updated':
-      return 'Lead updated';
-    case 'created':
-      return 'Lead created';
-    default:
-      return 'Activity';
-  }
-}
-  findAll() {
-    return `This action returns all leads`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} lead`;
-  }
-
-  // update(id: number, updateLeadDto: UpdateLeadDto) {
-  //   return `This action updates a #${id} lead`;
-  // }
-
-  remove(id: number) {
-    return `This action removes a #${id} lead`;
-  }
-
-  async updateLead(leadId: number, dto: UpdateLeadDto, user: any) {
-  if (!user) {
-    throw new UnauthorizedException('User not authenticated');
-  }
-
-  const currentRole = String(user.role || '').toLowerCase();
-  if (currentRole !== 'admin') {
-    throw new ForbiddenException('Only admin can update leads');
-  }
-
-  const lead = await this.prisma.leads.findUnique({
-    where: { id: BigInt(leadId) },
-  });
-
-  if (!lead) {
-    throw new NotFoundException('Lead not found');
-  }
-
-  let assignedAgentId: bigint | null | undefined = undefined;
-  let assignedAgentName: string | null | undefined = undefined;
-
-  if (dto.assigned_agent_id !== undefined) {
-    if (dto.assigned_agent_id === null as any) {
-      assignedAgentId = null;
-      assignedAgentName = null;
-    } else {
+    if (dto.assigned_agent_id) {
       const employee = await this.prisma.user.findUnique({
         where: { id: BigInt(dto.assigned_agent_id) },
         select: { id: true, name: true, role: true, is_active: true },
@@ -1014,112 +808,323 @@ private getActivityTitle(activityType: string) {
         employee.name?.trim() ||
         `User ${employee.id.toString()}`;
     }
-  }
 
-  const oldValue = {
-    name: lead.name,
-    email: lead.email,
-    contact_no: lead.contact_no,
-    destination: lead.destination,
-    travel_date: lead.travel_date,
-    travellers_count: lead.travellers_count,
-    budget: lead.budget,
-    source: lead.source,
-    remark: lead.remark,
-    status: lead.status,
-    assigned_agent_id: lead.assigned_agent_id ? Number(lead.assigned_agent_id) : null,
-    assigned_agent_name: lead.assigned_agent_name,
-    follow_up_status: lead.follow_up_status,
-    follow_up_date: lead.follow_up_date,
-  };
+    const created = await this.prisma.$transaction(async (tx) => {
+      const lead = await tx.leads.create({
+        data: {
+          lead_code: 'TEMP',
+          source_type: (dto.source_type || 'manual') as any,
+          source_table: (dto.source || 'manual') as any,
+          source_row_id: BigInt(0),
+          departure_type: dto.departure_type || 'others',
 
-  const data: any = {
-    updated_at: new Date(),
-  };
+          name: dto.name.trim(),
+          email: dto.email?.trim() || null,
+          contact_no: dto.contact_no?.trim() || null,
 
-  if (dto.name !== undefined) data.name = dto.name;
-  if (dto.email !== undefined) data.email = dto.email || null;
-  if (dto.contact_no !== undefined) data.contact_no = dto.contact_no || null;
-  if (dto.destination !== undefined) data.destination = dto.destination || null;
-  if (dto.travel_date !== undefined) data.travel_date = dto.travel_date ? new Date(dto.travel_date) : null;
-  if (dto.travellers_count !== undefined) data.travellers_count = dto.travellers_count;
-  if (dto.budget !== undefined) data.budget = dto.budget || null;
-  if (dto.source_type !== undefined) data.source_type = dto.source_type || 'manual';
-  if (dto.source !== undefined) data.source = dto.source || 'manual';
-  if (dto.departure_type !== undefined) data.departure_type = dto.departure_type || 'others';
-  if (dto.remark !== undefined) data.remark = dto.remark || null;
-  if (dto.status !== undefined) data.status = dto.status as any;
-  if (dto.follow_up_status !== undefined) data.follow_up_status = dto.follow_up_status as any;
-  if (dto.follow_up_date !== undefined) data.follow_up_date = dto.follow_up_date ? new Date(dto.follow_up_date) : null;
+          destination: dto.destination?.trim() || null,
+          travel_date: dto.travel_date ? new Date(dto.travel_date) : null,
+          travellers_count: dto.travellers_count ?? null,
+          budget: dto.budget?.trim() || null,
+          source: dto.source?.trim() || 'Manual',
+          remark: dto.remark?.trim() || null,
 
-  if (assignedAgentId !== undefined) {
-    data.assigned_agent_id = assignedAgentId;
-    data.assigned_agent_name = assignedAgentName;
-  }
+          status: (dto.status || 'new') as any,
+          assigned_agent_id: assignedAgentId,
+          assigned_agent_name: assignedAgentName,
+          follow_up_status: (dto.follow_up_status || 'pending') as any,
+          follow_up_date: dto.follow_up_date ? new Date(dto.follow_up_date) : null,
 
-  const updated = await this.prisma.$transaction(async (tx) => {
-    const updatedLead = await tx.leads.update({
-      where: { id: BigInt(leadId) },
-      data,
+          raw_payload: JSON.stringify({
+            created_manually: true,
+            created_by_user_id: user.id,
+            created_by_role: user.role,
+          }),
+        },
+      });
+
+      const leadCode = this.generateLeadCode(lead.id);
+
+      const updatedLead = await tx.leads.update({
+        where: { id: lead.id },
+        data: { lead_code: leadCode },
+      });
+
+      await tx.lead_activities.create({
+        data: {
+          lead_id: lead.id,
+          activity_type: 'created',
+          note: `Lead created manually by ${currentRole}`,
+          created_by: BigInt(user.id),
+        },
+      });
+
+      if (assignedAgentId) {
+        await tx.lead_activities.create({
+          data: {
+            lead_id: lead.id,
+            activity_type: 'assigned',
+            new_value: JSON.stringify({
+              assigned_agent_id: Number(assignedAgentId),
+              assigned_agent_name: assignedAgentName,
+            }),
+            note: `Lead assigned during creation to ${assignedAgentName}`,
+            created_by: BigInt(user.id),
+          },
+        });
+      }
+
+      if (dto.follow_up_date || dto.follow_up_status) {
+        await tx.lead_follow_ups.create({
+          data: {
+            lead_id: lead.id,
+            follow_up_date: dto.follow_up_date ? new Date(dto.follow_up_date) : null,
+            status:
+              dto.follow_up_status === 'completed'
+                ? 'done'
+                : dto.follow_up_status === 'scheduled'
+                  ? 'pending'
+                  : dto.follow_up_status === 'follow_up_needed'
+                    ? 'rescheduled'
+                    : dto.follow_up_status === 'not_required'
+                      ? 'done'
+                      : 'pending',
+            note: dto.remark?.trim() || 'Initial follow-up created with manual lead',
+            created_by: BigInt(user.id),
+          },
+        });
+      }
+
+      return updatedLead;
     });
 
-    await tx.lead_activities.create({
+    return {
+      message: 'Lead created successfully',
       data: {
-        lead_id: BigInt(leadId),
-        activity_type: 'updated',
-        old_value: JSON.stringify(oldValue),
-        new_value: JSON.stringify({
-          name: updatedLead.name,
-          email: updatedLead.email,
-          contact_no: updatedLead.contact_no,
-          destination: updatedLead.destination,
-          travel_date: updatedLead.travel_date,
-          travellers_count: updatedLead.travellers_count,
-          budget: updatedLead.budget,
-          source: updatedLead.source,
-          remark: updatedLead.remark,
-          status: updatedLead.status,
-          assigned_agent_id: updatedLead.assigned_agent_id ? Number(updatedLead.assigned_agent_id) : null,
-          assigned_agent_name: updatedLead.assigned_agent_name,
-          follow_up_status: updatedLead.follow_up_status,
-          follow_up_date: updatedLead.follow_up_date,
-        }),
-        note: dto.note || 'Lead updated by admin',
-        created_by: BigInt(user.id),
+        ...created,
+        id: Number(created.id),
+        source_row_id: Number(created.source_row_id),
+        assigned_agent_id: created.assigned_agent_id ? Number(created.assigned_agent_id) : null,
+        tour_id: created.tour_id ? Number(created.tour_id) : null,
       },
+    };
+  }
+
+  private generateLeadCode(id: bigint | number): string {
+    const numericId = Number(id);
+
+    const year = new Date().getFullYear();
+
+    const paddedId = numericId.toString().padStart(6, '0');
+
+    return `LED-${year}-${paddedId}`;
+  }
+
+  private safeParseJson(value: string | null) {
+    if (!value) return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+
+  private getActivityTitle(activityType: string) {
+    switch (activityType) {
+      case 'assigned':
+        return 'Lead assigned';
+      case 'status_changed':
+        return 'Status changed';
+      case 'follow_up':
+        return 'Follow-up updated';
+      case 'remark_added':
+        return 'Remark added';
+      case 'converted':
+        return 'Lead converted';
+      case 'updated':
+        return 'Lead updated';
+      case 'created':
+        return 'Lead created';
+      default:
+        return 'Activity';
+    }
+  }
+  findAll() {
+    return `This action returns all leads`;
+  }
+
+  findOne(id: number) {
+    return `This action returns a #${id} lead`;
+  }
+
+  // update(id: number, updateLeadDto: UpdateLeadDto) {
+  //   return `This action updates a #${id} lead`;
+  // }
+
+  remove(id: number) {
+    return `This action removes a #${id} lead`;
+  }
+
+  async updateLead(leadId: number, dto: UpdateLeadDto, user: any) {
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const currentRole = String(user.role || '').toLowerCase();
+    if (currentRole !== 'admin') {
+      throw new ForbiddenException('Only admin can update leads');
+    }
+
+    const lead = await this.prisma.leads.findUnique({
+      where: { id: BigInt(leadId) },
     });
 
-    if (dto.follow_up_status !== undefined || dto.follow_up_date !== undefined) {
-      await tx.lead_follow_ups.create({
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
+    }
+
+    let assignedAgentId: bigint | null | undefined = undefined;
+    let assignedAgentName: string | null | undefined = undefined;
+
+    if (dto.assigned_agent_id !== undefined) {
+      if (dto.assigned_agent_id === (null as any)) {
+        assignedAgentId = null;
+        assignedAgentName = null;
+      } else {
+        const employee = await this.prisma.user.findUnique({
+          where: { id: BigInt(dto.assigned_agent_id) },
+          select: { id: true, name: true, role: true, is_active: true },
+        });
+
+        if (!employee) {
+          throw new BadRequestException('Assigned employee not found');
+        }
+
+        if (!employee.is_active) {
+          throw new BadRequestException('Assigned employee is inactive');
+        }
+
+        const employeeRole = String(employee.role || '').toLowerCase();
+        if (!['admin', 'sales', 'operator'].includes(employeeRole)) {
+          throw new BadRequestException('Lead can be assigned only to staff');
+        }
+
+        assignedAgentId = BigInt(dto.assigned_agent_id);
+        assignedAgentName =
+          dto.assigned_agent_name?.trim() ||
+          employee.name?.trim() ||
+          `User ${employee.id.toString()}`;
+      }
+    }
+
+    const oldValue = {
+      name: lead.name,
+      email: lead.email,
+      contact_no: lead.contact_no,
+      destination: lead.destination,
+      travel_date: lead.travel_date,
+      travellers_count: lead.travellers_count,
+      budget: lead.budget,
+      source: lead.source,
+      remark: lead.remark,
+      status: lead.status,
+      assigned_agent_id: lead.assigned_agent_id ? Number(lead.assigned_agent_id) : null,
+      assigned_agent_name: lead.assigned_agent_name,
+      follow_up_status: lead.follow_up_status,
+      follow_up_date: lead.follow_up_date,
+    };
+
+    const data: any = {
+      updated_at: new Date(),
+    };
+
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.email !== undefined) data.email = dto.email || null;
+    if (dto.contact_no !== undefined) data.contact_no = dto.contact_no || null;
+    if (dto.destination !== undefined) data.destination = dto.destination || null;
+    if (dto.travel_date !== undefined)
+      data.travel_date = dto.travel_date ? new Date(dto.travel_date) : null;
+    if (dto.travellers_count !== undefined) data.travellers_count = dto.travellers_count;
+    if (dto.budget !== undefined) data.budget = dto.budget || null;
+    if (dto.source_type !== undefined) data.source_type = dto.source_type || 'manual';
+    if (dto.source !== undefined) data.source = dto.source || 'manual';
+    if (dto.departure_type !== undefined) data.departure_type = dto.departure_type || 'others';
+    if (dto.remark !== undefined) data.remark = dto.remark || null;
+    if (dto.status !== undefined) data.status = dto.status as any;
+    if (dto.follow_up_status !== undefined) data.follow_up_status = dto.follow_up_status as any;
+    if (dto.follow_up_date !== undefined)
+      data.follow_up_date = dto.follow_up_date ? new Date(dto.follow_up_date) : null;
+
+    if (assignedAgentId !== undefined) {
+      data.assigned_agent_id = assignedAgentId;
+      data.assigned_agent_name = assignedAgentName;
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedLead = await tx.leads.update({
+        where: { id: BigInt(leadId) },
+        data,
+      });
+
+      await tx.lead_activities.create({
         data: {
           lead_id: BigInt(leadId),
-          follow_up_date: dto.follow_up_date ? new Date(dto.follow_up_date) : null,
-          status:
-            dto.follow_up_status === 'completed' || dto.follow_up_status === 'not_required'
-              ? 'done'
-              : dto.follow_up_status === 'follow_up_needed'
-              ? 'missed'
-              : 'pending',
+          activity_type: 'updated',
+          old_value: JSON.stringify(oldValue),
+          new_value: JSON.stringify({
+            name: updatedLead.name,
+            email: updatedLead.email,
+            contact_no: updatedLead.contact_no,
+            destination: updatedLead.destination,
+            travel_date: updatedLead.travel_date,
+            travellers_count: updatedLead.travellers_count,
+            budget: updatedLead.budget,
+            source: updatedLead.source,
+            remark: updatedLead.remark,
+            status: updatedLead.status,
+            assigned_agent_id: updatedLead.assigned_agent_id
+              ? Number(updatedLead.assigned_agent_id)
+              : null,
+            assigned_agent_name: updatedLead.assigned_agent_name,
+            follow_up_status: updatedLead.follow_up_status,
+            follow_up_date: updatedLead.follow_up_date,
+          }),
           note: dto.note || 'Lead updated by admin',
           created_by: BigInt(user.id),
         },
       });
-    }
 
-    return updatedLead;
-  });
+      if (dto.follow_up_status !== undefined || dto.follow_up_date !== undefined) {
+        await tx.lead_follow_ups.create({
+          data: {
+            lead_id: BigInt(leadId),
+            follow_up_date: dto.follow_up_date ? new Date(dto.follow_up_date) : null,
+            status:
+              dto.follow_up_status === 'completed' || dto.follow_up_status === 'not_required'
+                ? 'done'
+                : dto.follow_up_status === 'follow_up_needed'
+                  ? 'missed'
+                  : 'pending',
+            note: dto.note || 'Lead updated by admin',
+            created_by: BigInt(user.id),
+          },
+        });
+      }
 
-  return {
-    message: 'Lead updated successfully',
-    data: {
-      ...updated,
-      id: Number(updated.id),
-      source_row_id: Number(updated.source_row_id),
-      assigned_agent_id: updated.assigned_agent_id ? Number(updated.assigned_agent_id) : null,
-      tour_id: updated.tour_id ? Number(updated.tour_id) : null,
-    },
-  };
-}
+      return updatedLead;
+    });
+
+    return {
+      message: 'Lead updated successfully',
+      data: {
+        ...updated,
+        id: Number(updated.id),
+        source_row_id: Number(updated.source_row_id),
+        assigned_agent_id: updated.assigned_agent_id ? Number(updated.assigned_agent_id) : null,
+        tour_id: updated.tour_id ? Number(updated.tour_id) : null,
+      },
+    };
+  }
 
   async getFollowups(query: GetFollowupsDto, user: any) {
     const page = Number(query.page) || 1;
@@ -1167,14 +1172,19 @@ private getActivityTitle(activityType: string) {
     const sortField = fieldMap[query.sort || 'created_at'] ?? query.sort ?? 'follow_up_date';
     const sortOrder = query.order || 'desc';
 
-    
-
     // Fields that belong to the leads relation
-    const leadFields = ['name', 'email', 'destination', 'travel_date', 'status', 'assigned_agent_name'];
+    const leadFields = [
+      'name',
+      'email',
+      'destination',
+      'travel_date',
+      'status',
+      'assigned_agent_name',
+    ];
 
     const orderBy = leadFields.includes(sortField)
-      ? { leads: { [sortField]: sortOrder } }        // relational sort
-      : { [sortField]: sortOrder };                   // local sort
+      ? { leads: { [sortField]: sortOrder } } // relational sort
+      : { [sortField]: sortOrder }; // local sort
 
     const followups = await this.prisma.lead_follow_ups.findMany({
       where,
@@ -1197,7 +1207,7 @@ private getActivityTitle(activityType: string) {
           },
         },
       },
-      orderBy
+      orderBy,
     });
 
     const total = await this.prisma.lead_follow_ups.count({ where });
@@ -1213,11 +1223,7 @@ private getActivityTitle(activityType: string) {
     };
   }
 
-  async getLeadsSummary(query?: {
-    date?: Date | 'today',
-    startDate?: Date,
-    endDate?: Date
-  }) {
+  async getLeadsSummary(query?: { date?: Date | 'today'; startDate?: Date; endDate?: Date }) {
     const ALL_STATUSES = [
       'new',
       'contacted',
@@ -1288,11 +1294,19 @@ private getActivityTitle(activityType: string) {
     }
 
     const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0)
+    todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999)
+    todayEnd.setHours(23, 59, 59, 999);
 
-    const [total, byStatus, bySourceType, todays_followups, overdue_raw, todays_followups_count, recent_leads] = await this.prisma.$transaction([
+    const [
+      total,
+      byStatus,
+      bySourceType,
+      todays_followups,
+      overdue_raw,
+      todays_followups_count,
+      recent_leads,
+    ] = await this.prisma.$transaction([
       this.prisma.leads.count({ where: dateFilter }),
       this.prisma.leads.groupBy({
         by: ['status'],
@@ -1342,7 +1356,7 @@ private getActivityTitle(activityType: string) {
               follow_up_status: true,
               follow_up_date: true,
               assigned_agent_name: true,
-              remark: true
+              remark: true,
             },
           },
         },
@@ -1351,9 +1365,9 @@ private getActivityTitle(activityType: string) {
         where: {
           follow_up_date: {
             gte: todayEnd,
-            lte: todayEnd
-          }
-        }
+            lte: todayEnd,
+          },
+        },
       }),
       this.prisma.leads.findMany({
         orderBy: { created_at: 'desc' },
@@ -1371,8 +1385,8 @@ private getActivityTitle(activityType: string) {
           follow_up_date: true,
           assigned_agent_name: true,
           updated_at: true,
-        }
-      })
+        },
+      }),
     ]);
 
     // Initialize with all statuses = 0
@@ -1386,10 +1400,7 @@ private getActivityTitle(activityType: string) {
 
     // Status Normalize and Overwrite with actual DB values
     byStatus.forEach((item) => {
-      const count =
-        item._count && typeof item._count !== 'boolean'
-          ? item._count.status ?? 0
-          : 0;
+      const count = item._count && typeof item._count !== 'boolean' ? (item._count.status ?? 0) : 0;
 
       statusCounts[item.status] = count;
     });
@@ -1412,23 +1423,20 @@ private getActivityTitle(activityType: string) {
     });
 
     const conversionRate = total ? Number((statusCounts.converted / total).toFixed(2)) : 0;
-    const overdue_leads = overdue_raw.map(item => item.leads).filter(Boolean);
-    return { 
-      total, 
+    const overdue_leads = overdue_raw.map((item) => item.leads).filter(Boolean);
+    return {
+      total,
       todays_followups_count,
-      count_by_status: statusCounts, 
+      count_by_status: statusCounts,
       count_by_source_type: sourceTypeCounts,
       conversion_rate: conversionRate,
       todays_followups,
       overdue_leads,
-      recent_leads
+      recent_leads,
     };
   }
 
-  async getLeadsFollowupsSummary(query?: {
-    status?: string;
-    date?: Date | 'today' | 'all';
-  }) {
+  async getLeadsFollowupsSummary(query?: { status?: string; date?: Date | 'today' | 'all' }) {
     let dateFilter = {};
 
     // Handle date logic
@@ -1502,12 +1510,12 @@ private getActivityTitle(activityType: string) {
         missed,
         rescheduled,
         done,
-        pending
-      }
+        pending,
+      },
     };
   }
 
-    private getAllowedSalesTransitions(): Record<string, string[]> {
+  private getAllowedSalesTransitions(): Record<string, string[]> {
     return {
       new: ['contacted', 'lost'],
       contacted: ['qualified', 'lost'],
@@ -1560,7 +1568,8 @@ private getActivityTitle(activityType: string) {
         normalizedNextStatus,
       )
     ) {
-      return currentLeadFollowUpStatus === 'completed' || currentLeadFollowUpStatus === 'not_required'
+      return currentLeadFollowUpStatus === 'completed' ||
+        currentLeadFollowUpStatus === 'not_required'
         ? 'pending'
         : ((currentLeadFollowUpStatus || 'pending') as
             | 'pending'
@@ -1621,11 +1630,7 @@ private getActivityTitle(activityType: string) {
     return 'pending';
   }
 
-  private async closeOpenFollowUps(
-    tx: any,
-    leadId: bigint,
-    note: string,
-  ) {
+  private async closeOpenFollowUps(tx: any, leadId: bigint, note: string) {
     await tx.lead_follow_ups.updateMany({
       where: {
         lead_id: leadId,
@@ -1639,5 +1644,3 @@ private getActivityTitle(activityType: string) {
     });
   }
 }
-
-

@@ -8,7 +8,7 @@ import { LeadCleanupService } from './leadCleanUp.service';
 @Module({
   imports: [PrismaModule],
   controllers: [LeadsController],
-  providers: [LeadsService, LeadsSyncService,LeadCleanupService],
+  providers: [LeadsService, LeadsSyncService, LeadCleanupService],
   exports: [LeadsSyncService, LeadsService],
 })
 export class LeadsModule {}

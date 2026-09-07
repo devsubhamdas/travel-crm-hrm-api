@@ -2,7 +2,6 @@ import { IsOptional, IsString, IsInt, IsDateString, IsNumber } from 'class-valid
 import { Type } from 'class-transformer';
 
 export class GetFollowupsDto {
-
   @IsOptional()
   @Type(() => Number)
   @IsInt()

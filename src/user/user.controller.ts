@@ -1,4 +1,12 @@
-import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { ApiResponse } from 'src/common/types/index.type';
@@ -27,8 +35,11 @@ export class UserController {
 
   // @UseGuards(JwtAuthGuard)
   @Get()
-  async getUsers(@Query('role') role?: string, @Query('is_active') is_active: boolean = true): Promise<ApiResponse> {
-    const users = await this.userService.getUsers({role, is_active});
+  async getUsers(
+    @Query('role') role?: string,
+    @Query('is_active') is_active: boolean = true,
+  ): Promise<ApiResponse> {
+    const users = await this.userService.getUsers({ role, is_active });
     if (!users) throw new NotFoundException('no users found');
     return {
       success: true,

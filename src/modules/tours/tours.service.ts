@@ -10,17 +10,17 @@ export class ToursService {
     });
   }
 
-  async getTourDepartures(query: { status?: string, seats?: string }) {
+  async getTourDepartures(query: { status?: string; seats?: string }) {
     const where: any = {};
     if (query.status === 'upcoming') {
       where.departure_date = {
         gte: new Date(),
       };
     }
-    if(query.seats === 'available') {
+    if (query.seats === 'available') {
       where.available_seats = {
-        gte: 0
-      }
+        gte: 0,
+      };
     }
 
     const departures = await this.prisma.tour_departures.findMany({

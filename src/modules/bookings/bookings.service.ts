@@ -654,18 +654,17 @@ export class BookingsService {
 
   async createBooking(payload: CreateBookingDto) {
     const result = await this.prisma.$transaction(async (tx) => {
-
       const hasTour = await tx.tours.findUnique({
-        where: {id: payload.tour_id}
+        where: { id: payload.tour_id },
       });
-      if(!hasTour) throw new NotFoundException('invalid tour id');
+      if (!hasTour) throw new NotFoundException('invalid tour id');
 
       const hasDeparture = await tx.tour_departures.findUnique({
-        where: {id: payload.departure_id}
-      })
-      if(!hasDeparture) throw new NotFoundException('invalid departure id');
-      
-      if(hasDeparture.available_seats < payload.guests) {
+        where: { id: payload.departure_id },
+      });
+      if (!hasDeparture) throw new NotFoundException('invalid departure id');
+
+      if (hasDeparture.available_seats < payload.guests) {
         throw new BadRequestException('guest count cannot exceed available seats');
       }
 
@@ -676,13 +675,13 @@ export class BookingsService {
       });
 
       await tx.tour_departures.update({
-        where: {id: payload.departure_id},
+        where: { id: payload.departure_id },
         data: {
           available_seats: {
-            decrement: payload.guests
-          }
-        }
-      })
+            decrement: payload.guests,
+          },
+        },
+      });
 
       return await tx.bookings.create({
         data: {

@@ -25,8 +25,11 @@ export class ToursController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(users_role.admin, users_role.manager, users_role.operator)
   @Get('departures')
-  async getTourDepartures(@Query('status') status?: string, @Query('status') seats?: string): Promise<ApiResponse> {
-    const result = await this.tourService.getTourDepartures({status, seats});
+  async getTourDepartures(
+    @Query('status') status?: string,
+    @Query('status') seats?: string,
+  ): Promise<ApiResponse> {
+    const result = await this.tourService.getTourDepartures({ status, seats });
     return {
       success: true,
       message: 'Tour departures fetched successfully',

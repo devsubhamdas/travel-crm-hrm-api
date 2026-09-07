@@ -15,25 +15,25 @@ export class UpdateLeadDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   name?: string;
 
   @IsOptional()
   @IsEmail()
   @MaxLength(255)
-  @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
   email?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(20)
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   contact_no?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   destination?: string;
 
   @IsOptional()
@@ -49,13 +49,13 @@ export class UpdateLeadDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   budget?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   source?: string;
 
   @IsOptional()
@@ -71,10 +71,10 @@ export class UpdateLeadDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   assigned_agent_name?: string;
 
-    @IsOptional()
+  @IsOptional()
   @IsIn([
     'new',
     'contacted',
@@ -99,14 +99,8 @@ export class UpdateLeadDto {
 
   @IsOptional()
   @IsIn(['pending', 'follow_up_needed', 'scheduled', 'completed', 'not_required'])
-  follow_up_status?:
-    | 'pending'
-    | 'follow_up_needed'
-    | 'scheduled'
-    | 'completed'
-    | 'not_required';
+  follow_up_status?: 'pending' | 'follow_up_needed' | 'scheduled' | 'completed' | 'not_required';
 
-    
   @IsOptional()
   @IsDateString()
   follow_up_date?: string;
@@ -116,39 +110,39 @@ export class UpdateLeadDto {
   note?: string;
 
   @IsOptional()
-    @IsIn([
-      'trip_lead',
-      'enquiry',
-      'itinerary',
-      'contact',
-      'manual',
-      'whatsapp',
-      'call',
-      'email',
-      'media_ad',
-      'social_ad',
-      'twak_to',
-      'datasheet',
-      'walk_in',
-      'referral',
-    ])
-    source_type?:
-      | 'trip_lead'
-      | 'enquiry'
-      | 'itinerary'
-      | 'contact'
-      | 'manual'
-      | 'whatsapp'
-      | 'call'
-      | 'email'
-      | 'media_ad'
-      | 'social_ad'
-      | 'twak_to'
-      | 'datasheet'
-      | 'walk_in'
-      | 'referral';
+  @IsIn([
+    'trip_lead',
+    'enquiry',
+    'itinerary',
+    'contact',
+    'manual',
+    'whatsapp',
+    'call',
+    'email',
+    'media_ad',
+    'social_ad',
+    'twak_to',
+    'datasheet',
+    'walk_in',
+    'referral',
+  ])
+  source_type?:
+    | 'trip_lead'
+    | 'enquiry'
+    | 'itinerary'
+    | 'contact'
+    | 'manual'
+    | 'whatsapp'
+    | 'call'
+    | 'email'
+    | 'media_ad'
+    | 'social_ad'
+    | 'twak_to'
+    | 'datasheet'
+    | 'walk_in'
+    | 'referral';
 
   @IsOptional()
   @IsIn(['fixed', 'customized', 'others'])
-  departure_type?: 'fixed' | 'customized' | 'others'
+  departure_type?: 'fixed' | 'customized' | 'others';
 }

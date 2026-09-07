@@ -9,8 +9,12 @@ export class DashboardController {
   constructor(private readonly leadService: LeadsService) {}
 
   @Get('leads-summary')
-  async getLeadsSummary(@Query('date') date?: Date | 'today', @Query('startDate') startDate?: Date, @Query('endDate') endDate?: Date): Promise<ApiResponse> {
-    const data = await this.leadService.getLeadsSummary({date, startDate, endDate});
+  async getLeadsSummary(
+    @Query('date') date?: Date | 'today',
+    @Query('startDate') startDate?: Date,
+    @Query('endDate') endDate?: Date,
+  ): Promise<ApiResponse> {
+    const data = await this.leadService.getLeadsSummary({ date, startDate, endDate });
     return {
       success: true,
       message: 'leads summary fetched successfully',

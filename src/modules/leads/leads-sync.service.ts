@@ -3,7 +3,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetLeadsDto } from './dto/get-leads.dto';
 
-
 type SyncResult = {
   source: string;
   scanned: number;
@@ -17,8 +16,6 @@ export class LeadsSyncService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-
-  
   async syncAllSources() {
     const results: SyncResult[] = [];
 
@@ -49,7 +46,7 @@ export class LeadsSyncService {
     for (const row of rows) {
       const alreadySynced = await this.prisma.lead_sync_logs.findUnique({
         where: {
-             source_table_source_row_id: {
+          source_table_source_row_id: {
             source_table: sourceTable,
             source_row_id: BigInt(row.id),
           },
@@ -61,9 +58,8 @@ export class LeadsSyncService {
         continue;
       }
 
-      const destination = [row.preferred_country, row.preferred_city]
-        .filter(Boolean)
-        .join(', ') || null;
+      const destination =
+        [row.preferred_country, row.preferred_city].filter(Boolean).join(', ') || null;
 
       const travellersCount =
         Number(row.number_of_adults || 0) + Number(row.number_of_children || 0);
@@ -161,7 +157,7 @@ export class LeadsSyncService {
     for (const row of rows) {
       const alreadySynced = await this.prisma.lead_sync_logs.findUnique({
         where: {
-             source_table_source_row_id: {
+          source_table_source_row_id: {
             source_table: sourceTable,
             source_row_id: BigInt(row.id),
           },
@@ -247,7 +243,7 @@ export class LeadsSyncService {
     for (const row of rows) {
       const alreadySynced = await this.prisma.lead_sync_logs.findUnique({
         where: {
-              source_table_source_row_id: {
+          source_table_source_row_id: {
             source_table: sourceTable,
             source_row_id: BigInt(row.id),
           },
@@ -259,8 +255,7 @@ export class LeadsSyncService {
         continue;
       }
 
-      const travellersCount =
-        Number(row.travelers || 0) + Number(row.children || 0);
+      const travellersCount = Number(row.travelers || 0) + Number(row.children || 0);
 
       const remarkParts = [
         row.preferences ? `Preferences: ${row.preferences}` : null,
@@ -343,7 +338,7 @@ export class LeadsSyncService {
     for (const row of rows) {
       const alreadySynced = await this.prisma.lead_sync_logs.findUnique({
         where: {
-              source_table_source_row_id: {
+          source_table_source_row_id: {
             source_table: sourceTable,
             source_row_id: BigInt(row.id),
           },
@@ -422,10 +417,9 @@ export class LeadsSyncService {
     return `LED-${year}-${String(numericId).padStart(6, '0')}`;
   }
 
- private toJsonString(row: unknown): string {
-  return JSON.stringify(
-    row,
-    (_, value) => (typeof value === 'bigint' ? value.toString() : value),
-  );
-}
+  private toJsonString(row: unknown): string {
+    return JSON.stringify(row, (_, value) =>
+      typeof value === 'bigint' ? value.toString() : value,
+    );
+  }
 }

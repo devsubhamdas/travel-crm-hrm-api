@@ -58,13 +58,13 @@ export class UserService {
     return await this._prisma.user.findMany({
       where: match,
       select: {
-      id: true,
-      name: true,
-      email: true,
-      contact_no: true,
-      is_active: true,
-      createdAt: true
-    },
+        id: true,
+        name: true,
+        email: true,
+        contact_no: true,
+        is_active: true,
+        createdAt: true,
+      },
     });
   }
 

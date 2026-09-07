@@ -6,6 +6,6 @@ import { LeadsModule } from '../leads/leads.module';
 @Module({
   imports: [LeadsModule],
   controllers: [DashboardController],
-  providers: [DashboardService]
+  providers: [DashboardService],
 })
 export class DashboardModule {}

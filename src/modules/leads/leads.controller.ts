@@ -46,10 +46,7 @@ export class LeadsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('follow-ups')
-  async getFollowups(
-    @Query() query: GetFollowupsDto,
-    @Req() req: Request,
-  ): Promise<ApiResponse> {
+  async getFollowups(@Query() query: GetFollowupsDto, @Req() req: Request): Promise<ApiResponse> {
     const result = await this.leadsService.getFollowups(query, req.user);
 
     return {
@@ -120,29 +117,20 @@ export class LeadsController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id/activities')
-  async getLeadActivities(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  async getLeadActivities(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.leadsService.getLeadActivities(id, req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(users_role.admin, users_role.sales)
   @Get(':id')
-  async getLeadById(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  async getLeadById(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.leadsService.getLeadById(id, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async createLead(
-    @Body() dto: CreateLeadDto,
-    @Req() req: any,
-  ) {
+  async createLead(@Body() dto: CreateLeadDto, @Req() req: any) {
     return this.leadsService.createLead(dto, req.user);
   }
 

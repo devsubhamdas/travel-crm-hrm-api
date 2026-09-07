@@ -17,7 +17,6 @@ export class LeadCleanupService {
 
     // We use a transaction to ensure both tables stay in sync
     await this.prisma.$transaction(async (tx) => {
-      
       // 1. Identify follow-ups that passed their date without being completed
       const missedFollowUps = await tx.lead_follow_ups.findMany({
         where: {
@@ -31,17 +30,17 @@ export class LeadCleanupService {
       // 2. Mark follow-ups as 'missed' in the history table
       await tx.lead_follow_ups.updateMany({
         where: {
-          id: { in: missedFollowUps.map(f => f.id) },
+          id: { in: missedFollowUps.map((f) => f.id) },
         },
         data: { status: 'missed' },
       });
 
       // 3. Update the main Lead table so the Agent sees "Follow-up Needed"
-      const leadIds = [...new Set(missedFollowUps.map(f => f.lead_id))];
-      
+      const leadIds = [...new Set(missedFollowUps.map((f) => f.lead_id))];
+
       await tx.leads.updateMany({
         where: {
-          id: { in: leadIds.map(id => BigInt(id)) },
+          id: { in: leadIds.map((id) => BigInt(id)) },
         },
         data: {
           follow_up_status: 'follow_up_needed', // This triggers a red flag in the UI

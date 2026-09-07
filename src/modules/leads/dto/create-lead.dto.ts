@@ -63,7 +63,7 @@ export class CreateLeadDto {
   @IsString()
   assigned_agent_name?: string;
 
-   @IsOptional()
+  @IsOptional()
   @IsIn([
     'new',
     'contacted',
@@ -129,5 +129,5 @@ export class CreateLeadDto {
 
   @IsOptional()
   @IsIn(['fixed', 'customized', 'others'])
-  departure_type?: 'fixed' | 'customized' | 'others'
+  departure_type?: 'fixed' | 'customized' | 'others';
 }

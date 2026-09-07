@@ -12,7 +12,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // cors config
   app.enableCors({
-    origin: ['http://localhost:4200', 'https://olivedrab-turkey-601293.hostingersite.com','https://www.olivedrab-turkey-601293.hostingersite.com'], // your Angular dev server
+    origin: [
+      'http://localhost:4200',
+      'https://olivedrab-turkey-601293.hostingersite.com',
+      'https://www.olivedrab-turkey-601293.hostingersite.com',
+    ], // your Angular dev server
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true, // needed if using cookies
