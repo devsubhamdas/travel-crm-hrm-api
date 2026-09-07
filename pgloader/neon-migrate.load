@@ -1,0 +1,32 @@
+LOAD DATABASE
+  FROM mysql://root:root@127.0.0.1:3306/<db_name>
+  INTO postgresql://neondb_owner:endpoint=ep-wandering-paper-azpz2tae;<password>@ep-wandering-paper-azpz2tae-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+
+WITH include drop,
+  create tables,
+  create indexes,
+  reset sequences,
+  foreign keys
+
+SET work_mem to '16MB',
+  maintenance_work_mem to '512MB'
+
+AFTER LOAD DO
+$$
+DO $BODY$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = '<mysql_db_name>'
+    LOOP
+        EXECUTE format(
+            'ALTER TABLE <mysql_db_name>.%I SET SCHEMA public;',
+            r.tablename
+        );
+    END LOOP;
+END;
+$BODY$;
+$$;

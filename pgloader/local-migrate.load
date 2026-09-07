@@ -1,0 +1,32 @@
+LOAD DATABASE
+  FROM mysql://root:root@127.0.0.1:3306/<db_name>
+  INTO postgresql://root:root@localhost:5432/<db_name>
+
+WITH include drop,
+  create tables,
+  create indexes,
+  reset sequences,
+  foreign keys
+
+SET work_mem to '16MB',
+  maintenance_work_mem to '512MB'
+
+AFTER LOAD DO
+$$
+DO $BODY$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = '<mysql_db_name>'
+    LOOP
+        EXECUTE format(
+            'ALTER TABLE <mysql_db_name>.%I SET SCHEMA public;',
+            r.tablename
+        );
+    END LOOP;
+END;
+$BODY$;
+$$;
