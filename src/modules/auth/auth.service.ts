@@ -4,7 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { UserService } from 'src/user/user.service';
+import { UserService } from 'src/modules/user/user.service';
 import { CreateUserDto } from '../user/dto/user.dto';
 import bcrypt from 'bcrypt';
 import { LoginDto } from './dto/auth.dto';

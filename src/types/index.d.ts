@@ -1,4 +1,4 @@
-import { UserResponseDto as User } from 'src/user/dto/user.dto';
+import { UserResponseDto as User } from 'src/modules/user/dto/user.dto';
 
 declare global {
   namespace Express {
