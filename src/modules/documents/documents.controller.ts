@@ -4,7 +4,7 @@ import { DocumentsService } from './documents.service';
 import { RejectDocumentDto } from './dto/reject-document.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles/roles.guard';
-import { users_role } from 'generated/prisma/enums';
+import { users_role } from 'src/generated/prisma/enums';
 import { Roles } from 'src/common/decorators/roles/roles.decorator';
 
 @Controller('crm/documents')

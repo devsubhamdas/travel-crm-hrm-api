@@ -4,7 +4,7 @@ import { ApiResponse } from 'src/common/types/index.type';
 import { ToursService } from './tours.service';
 import { RolesGuard } from 'src/common/guards/roles/roles.guard';
 import { Roles } from 'src/common/decorators/roles/roles.decorator';
-import { users_role } from 'generated/prisma/enums';
+import { users_role } from 'src/generated/prisma/enums';
 
 @Controller('crm/tours')
 export class ToursController {

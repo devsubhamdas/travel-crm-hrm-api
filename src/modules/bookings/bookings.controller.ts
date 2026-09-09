@@ -19,7 +19,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
 import { UpdateBookingFollowUpDto } from './dto/update-booking-follow-up.dto';
 import { UpdateBookingNotesDto } from './dto/update-booking-notes.dto';
 import { RolesGuard } from 'src/common/guards/roles/roles.guard';
-import { users_role } from 'generated/prisma/browser';
+import { users_role } from 'src/generated/prisma/browser';
 import { Roles } from 'src/common/decorators/roles/roles.decorator';
 import { GetBookingFollowUpsDto } from './dto/get-booking-follow-ups.dto';
 import { AddBookingTravellersDto } from './dto/add-booking-travellers.dto';

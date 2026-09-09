@@ -8,7 +8,7 @@ import { UserService } from 'src/user/user.service';
 import { CreateUserDto } from '../user/dto/user.dto';
 import bcrypt from 'bcrypt';
 import { LoginDto } from './dto/auth.dto';
-import { user, users_role } from 'generated/prisma/client';
+import { user, users_role } from 'src/generated/prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { SignOptions } from 'jsonwebtoken';
 

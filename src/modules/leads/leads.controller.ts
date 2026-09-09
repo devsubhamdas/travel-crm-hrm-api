@@ -19,7 +19,7 @@ import { UpdateLeadStatusDto } from './dto/update-lead-status.dto';
 import { UpdateFollowUpDto } from './dto/update-follow-up.dto';
 import { RolesGuard } from 'src/common/guards/roles/roles.guard';
 import { Roles } from 'src/common/decorators/roles/roles.decorator';
-import { users_role } from 'generated/prisma/enums';
+import { users_role } from 'src/generated/prisma/enums';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import type { Request } from 'express';
 import { ApiResponse } from 'src/common/types/index.type';

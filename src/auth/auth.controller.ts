@@ -7,7 +7,7 @@ import type { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
 import { Public } from 'src/common/decorators/public/public.decorator';
 import { Roles } from 'src/common/decorators/roles/roles.decorator';
-import { users_role } from 'generated/prisma/enums';
+import { users_role } from 'src/generated/prisma/client';
 import { RolesGuard } from 'src/common/guards/roles/roles.guard';
 
 @Controller('auth')
